@@ -56,8 +56,22 @@ function Find-AccessExe {
 function Set-DefaultRegistryValue {
     param([string]$Path, [string]$Value)
 
-    $item = Get-Item -Path $Path
-    $item.SetValue('', $Value)
+    if ($Path -notmatch '^HKCU:\\(.+)$') {
+        throw "Only HKCU registry paths are supported: $Path"
+    }
+
+    $subKeyPath = $matches[1]
+    $key = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey($subKeyPath)
+    if (-not $key) {
+        throw "Failed to open registry key for writing: $Path"
+    }
+
+    try {
+        $key.SetValue('', $Value, [Microsoft.Win32.RegistryValueKind]::String)
+    }
+    finally {
+        $key.Close()
+    }
 }
 
 $scriptDir = Split-Path -Parent $PSCommandPath
