@@ -77,6 +77,10 @@ function Add-AccessCandidate {
         return
     }
 
+    if ($fullPath -match '\\Microsoft Office\\Updates\\' -or $fullPath -match '\\Updates\\Download\\PackageFiles\\') {
+        return
+    }
+
     $key = $fullPath.ToLowerInvariant()
     if ($Seen.ContainsKey($key)) {
         return
@@ -143,6 +147,10 @@ function Get-AccessCandidates {
         $officeRoot = Join-Path $base 'Microsoft Office'
         if (Test-Path -LiteralPath $officeRoot -PathType Container) {
             Get-ChildItem -Path $officeRoot -Filter 'MSACCESS.EXE' -Recurse -File -ErrorAction SilentlyContinue |
+                Where-Object {
+                    $relativePath = $_.FullName.Substring($officeRoot.Length).TrimStart('\')
+                    $relativePath -match '^(root\\)?Office\d+\\MSACCESS\.EXE$'
+                } |
                 ForEach-Object {
                     Add-AccessCandidate -Candidates $candidates -Seen $seen -Path $_.FullName -Source 'Microsoft Office folder scan'
                 }
